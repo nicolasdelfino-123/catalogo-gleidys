@@ -449,6 +449,8 @@ export default function AdminProducts() {
     const [savingProduct, setSavingProduct] = useState(false);
     const [savingFeaturedId, setSavingFeaturedId] = useState(null);
     const [featuredProductIds, setFeaturedProductIds] = useState([]);
+    const [hidingProductId, setHidingProductId] = useState(null);
+    const [productToHide, setProductToHide] = useState(null);
 
 
 
@@ -489,14 +491,17 @@ export default function AdminProducts() {
                 }),
             ])
 
+            let visibleProductIds = null;
             if (productsRes.ok) {
                 const data = await productsRes.json()
                 setProducts(data || [])
+                visibleProductIds = new Set((data || []).map((product) => Number(product.id)));
             }
 
             if (featuredRes.ok) {
                 const data = await featuredRes.json()
-                setFeaturedProductIds((data?.product_ids || []).map(Number))
+                const ids = (data?.product_ids || []).map(Number);
+                setFeaturedProductIds(visibleProductIds ? ids.filter((id) => visibleProductIds.has(id)) : ids)
             }
         } catch (error) {
             console.error("Error fetching products:", error)
@@ -506,6 +511,32 @@ export default function AdminProducts() {
     useEffect(() => {
         fetchAll()
     }, [])
+
+    const hideProduct = async (product) => {
+        setHidingProductId(product.id);
+        try {
+            const res = await fetch(`${API}/admin/products/${product.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                alert(data?.error || "No se pudo ocultar el producto");
+                return;
+            }
+
+            setProducts((prev) => prev.filter((item) => item.id !== product.id));
+            setFeaturedProductIds((prev) => prev.filter((id) => Number(id) !== Number(product.id)));
+            if (form?.id === product.id) setForm(null);
+            setProductToHide(null);
+        } catch (error) {
+            console.error(error);
+            alert("Error ocultando producto");
+        } finally {
+            setHidingProductId(null);
+        }
+    };
 
     const persistFeaturedSelection = async (nextIds) => {
         const res = await fetch(`${API}/admin/home-featured-products`, {
@@ -1934,46 +1965,58 @@ export default function AdminProducts() {
                                             )}
                                         </td>
                                         <td className="p-2 text-right">
-                                            <button
-                                                onClick={() => {
-                                                    let catalog = Array.isArray(p.flavor_catalog) ? p.flavor_catalog : [];
-                                                    if ((!catalog || catalog.length === 0) && Array.isArray(p.flavors) && p.flavors.length > 0) {
-                                                        catalog = p.flavors.map((n) => ({ name: n, active: true, stock: 0 }));
-                                                    }
-                                                    if (!Array.isArray(catalog)) catalog = [];
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        let catalog = Array.isArray(p.flavor_catalog) ? p.flavor_catalog : [];
+                                                        if ((!catalog || catalog.length === 0) && Array.isArray(p.flavors) && p.flavors.length > 0) {
+                                                            catalog = p.flavors.map((n) => ({ name: n, active: true, stock: 0 }));
+                                                        }
+                                                        if (!Array.isArray(catalog)) catalog = [];
 
-                                                    const flavorStockMode = Boolean(p?.flavor_stock_mode ?? false);
-                                                    const sum = sumActiveFlavorStock(catalog);
-                                                    const safeImage = (p.image_url && String(p.image_url).trim())
-                                                        ? p.image_url
-                                                        : "";
-                                                    let safeGallery = Array.isArray(p.image_urls) ? p.image_urls : [];
-                                                    safeGallery = safeGallery.filter((u) => !isDefaultImage(u));
-                                                    if (safeImage && !isDefaultImage(safeImage)) {
-                                                        safeGallery = uniqPush(safeGallery, safeImage);
-                                                    }
+                                                        const flavorStockMode = Boolean(p?.flavor_stock_mode ?? false);
+                                                        const sum = sumActiveFlavorStock(catalog);
+                                                        const safeImage = (p.image_url && String(p.image_url).trim())
+                                                            ? p.image_url
+                                                            : "";
+                                                        let safeGallery = Array.isArray(p.image_urls) ? p.image_urls : [];
+                                                        safeGallery = safeGallery.filter((u) => !isDefaultImage(u));
+                                                        if (safeImage && !isDefaultImage(safeImage)) {
+                                                            safeGallery = uniqPush(safeGallery, safeImage);
+                                                        }
 
-                                                    setForm({
-                                                        ...p,
-                                                        category_id: p.category_id,
-                                                        price: "",
-                                                        price_wholesale: "",
-                                                        volume_ml: "",
-                                                        volume_stock: "",
-                                                        volume_options: getMlOptionsForTable(p),
-                                                        image_url: safeImage,
-                                                        image_urls: safeGallery,
-                                                        flavor_catalog: catalog,
-                                                        flavor_enabled: p.flavor_enabled ?? (catalog.length > 0),
-                                                        flavor_stock_mode: flavorStockMode,
-                                                        stock: flavorStockMode ? sum : (Number.isFinite(Number(p.stock)) ? Number(p.stock) : 0),
-                                                        show_on_home: featuredProductIds.includes(Number(p.id)),
-                                                    });
-                                                }}
-                                                className="px-3 py-1 border rounded hover:bg-gray-50"
-                                            >
-                                                Editar
-                                            </button>
+                                                        setForm({
+                                                            ...p,
+                                                            category_id: p.category_id,
+                                                            price: "",
+                                                            price_wholesale: "",
+                                                            volume_ml: "",
+                                                            volume_stock: "",
+                                                            volume_options: getMlOptionsForTable(p),
+                                                            image_url: safeImage,
+                                                            image_urls: safeGallery,
+                                                            flavor_catalog: catalog,
+                                                            flavor_enabled: p.flavor_enabled ?? (catalog.length > 0),
+                                                            flavor_stock_mode: flavorStockMode,
+                                                            stock: flavorStockMode ? sum : (Number.isFinite(Number(p.stock)) ? Number(p.stock) : 0),
+                                                            show_on_home: featuredProductIds.includes(Number(p.id)),
+                                                        });
+                                                    }}
+                                                    className="px-3 py-1 border rounded hover:bg-gray-50"
+                                                >
+                                                    Editar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setProductToHide(p)}
+                                                    disabled={hidingProductId === p.id}
+                                                    className="inline-flex items-center justify-center rounded border border-red-200 px-2.5 py-1 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    aria-label={`Ocultar producto ${p.name}`}
+                                                    title="Ocultar producto"
+                                                >
+                                                    {hidingProductId === p.id ? "..." : "🗑️"}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     {isMobileExpanded && (
@@ -2173,6 +2216,50 @@ export default function AdminProducts() {
                     }));
                 }}
             />
+
+            {productToHide && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+                        <h2 className="text-xl font-semibold text-gray-900">Ocultar producto</h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                            El producto no se va a borrar de la base de datos. Solo se va a ocultar del admin y de la pagina.
+                        </p>
+
+                        <div className="mt-4 rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                            <p>
+                                <strong>Producto:</strong> {productToHide.name}
+                            </p>
+                            {productToHide.brand && (
+                                <p>
+                                    <strong>Marca:</strong> {productToHide.brand}
+                                </p>
+                            )}
+                            <p>
+                                <strong>Precio:</strong> $ {Number(productToHide.price || 0).toLocaleString("es-AR")}
+                            </p>
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setProductToHide(null)}
+                                disabled={hidingProductId === productToHide.id}
+                                className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => hideProduct(productToHide)}
+                                disabled={hidingProductId === productToHide.id}
+                                className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {hidingProductId === productToHide.id ? "Ocultando..." : "Ocultar producto"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal edición/creación */}
             {form && (

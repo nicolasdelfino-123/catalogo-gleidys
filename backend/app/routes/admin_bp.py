@@ -6,6 +6,7 @@ Este archivo contendrá las rutas administrativas para CRUD de productos
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import or_, text
+from sqlalchemy.orm.attributes import flag_modified
 from app import db
 from app.models import Product, Category, User,ProductImage,now_cba_naive
 from flask import current_app, send_from_directory, url_for
@@ -29,6 +30,8 @@ ADMIN_HIDDEN_ORDER_MARKER = "__ADMIN_HIDDEN__"
 ADMIN_SETTINGS_TABLE = "admin_settings"
 HOME_FEATURED_PRODUCTS_KEY = "home_featured_product_ids"
 MAX_HOME_FEATURED_PRODUCTS = 12
+MULTI_CATEGORY_META_TYPE = "multi_category_meta"
+ADMIN_HIDDEN_PRODUCT_KEY = "is_active_product"
 
 def _ensure_admin_settings_table():
     db.session.execute(text(f"""
@@ -209,6 +212,22 @@ def _normalize_volume_options(rows):
 
 def _sum_volume_stock(rows):
     return sum(max(0, int(x.get('stock', 0) or 0)) for x in (rows or []))
+
+def _is_product_hidden_from_admin(product):
+    return any(
+        isinstance(item, dict)
+        and item.get('__type') == MULTI_CATEGORY_META_TYPE
+        and item.get(ADMIN_HIDDEN_PRODUCT_KEY) is False
+        for item in (product.flavor_catalog or [])
+    )
+
+def _catalog_with_product_hidden_marker(catalog):
+    rows = [dict(item) if isinstance(item, dict) else item for item in (catalog or [])]
+    for item in rows:
+        if isinstance(item, dict) and item.get('__type') == MULTI_CATEGORY_META_TYPE:
+            item[ADMIN_HIDDEN_PRODUCT_KEY] = False
+            return rows
+    return rows + [{'__type': MULTI_CATEGORY_META_TYPE, ADMIN_HIDDEN_PRODUCT_KEY: False}]
 
 # Middleware para verificar que el usuario sea admin
 def admin_required():
@@ -420,16 +439,11 @@ def delete_product(product_id):
         if not product:
             return jsonify({'error': 'Producto no encontrado'}), 404
 
-        hard = str(request.args.get('hard', '')).lower() in ('1','true','yes')
-
-        if hard:
-            # Con ON DELETE CASCADE, al borrar el product se borran sus imágenes
-            db.session.delete(product)
-        else:
-            product.is_active = False  # comportamiento anterior (soft delete)
+        product.flavor_catalog = _catalog_with_product_hidden_marker(product.flavor_catalog)
+        flag_modified(product, "flavor_catalog")
 
         db.session.commit()
-        return jsonify({'message': 'Producto eliminado'}), 200
+        return jsonify({'message': 'Producto ocultado', 'product_id': product_id}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error al eliminar producto: {str(e)}'}), 500
@@ -448,7 +462,7 @@ def get_all_products_admin():
         return jsonify({'error': 'Acceso denegado. Se requieren permisos de administrador.'}), 403
     
     try:
-        products = Product.query.all()  # Incluye productos inactivos
+        products = [product for product in Product.query.all() if not _is_product_hidden_from_admin(product)]
         return jsonify([product.serialize() for product in products]), 200
         
     except Exception as e:

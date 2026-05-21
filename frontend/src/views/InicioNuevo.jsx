@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useLayoutEffect } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Context } from "../js/store/appContext.jsx";
 import ProductCardPerfumes from "../components/ui/cards/ProductCardPerfumes.jsx";
@@ -6,6 +6,7 @@ import HomeContact from "../components/home/HomeContact.jsx";
 import Asesoria from "../components/Asesoria.jsx";
 import { storeConfig } from "../config/storeConfig";
 import { getNormalizedCategoryId, mapCategoryIdFromName } from "../utils/perfumeCategories.js";
+import { getApiUrl } from "../utils/apiUrl.js";
 
 import afnan from '../assets/afnan.webp'
 import al from '../assets/al.webp'
@@ -19,10 +20,13 @@ import maison from '../assets/maison.jpg'
 import rasasi from '../assets/rasasi.png'
 import ray from '../assets/raysi.jpg'
 
+const API = getApiUrl();
+
 export default function InicioNuevo() {
     const { store, actions } = useContext(Context);
     const location = useLocation();
     const navigate = useNavigate();
+    const [homeFeaturedIds, setHomeFeaturedIds] = useState(null);
     const heroImageDesktop = `/${storeConfig.media.heroImageDesktop || storeConfig.media.heroImage || ""}`;
     const heroImageMobile = `/${storeConfig.media.heroImageMobile || storeConfig.media.heroImageDesktop || storeConfig.media.heroImage || ""}`;
 
@@ -30,6 +34,14 @@ export default function InicioNuevo() {
         if (actions?.fetchProducts) {
             actions.fetchProducts();
         }
+        fetch(`${API}/public/home-featured-products`)
+            .then((res) => (res.ok ? res.json() : { product_ids: [] }))
+            .then((data) => {
+                setHomeFeaturedIds((data?.product_ids || []).map(Number));
+            })
+            .catch(() => {
+                setHomeFeaturedIds([]);
+            });
     }, []);
 
     const ADDRESS = storeConfig.business.address;
@@ -62,11 +74,20 @@ export default function InicioNuevo() {
         .sort((a, b) => getProductPrice(a) - getProductPrice(b))
         .slice(0, 6);
     const selectedFeaturedIds = new Set([...womenFeatured, ...menFeatured].map((p) => p.id));
-    const featuredProducts = [
+    const fallbackFeaturedProducts = [
         ...womenFeatured,
         ...menFeatured,
         ...allProducts.filter((p) => !selectedFeaturedIds.has(p.id)).slice(0, Math.max(0, 12 - (womenFeatured.length + menFeatured.length))),
     ].slice(0, 12);
+    const productById = new Map(allProducts.map((product) => [Number(product.id), product]));
+    const selectedHomeProducts = (homeFeaturedIds || [])
+        .map((productId) => productById.get(Number(productId)))
+        .filter(Boolean);
+    const featuredProducts = homeFeaturedIds === null
+        ? []
+        : homeFeaturedIds.length > 0
+            ? selectedHomeProducts
+            : fallbackFeaturedProducts;
 
 
     useLayoutEffect(() => {
@@ -164,36 +185,26 @@ export default function InicioNuevo() {
                 {/* =========================
        DESKTOP (NO TOCAR)
        ========================= */}
-                <div className="
+                <div
+                    className="
         hidden lg:flex
         relative
-        h-[650px]
-        lg:h-[700px]
+        min-h-[calc(100vh-80px)]
         items-end
         justify-center
         overflow-hidden
-    ">
+    "
+                >
 
                     <div
                         className="
-                absolute inset-0
-                bg-no-repeat
-
-                md:bg-[length:100vw_auto]
-                md:bg-[position:center_-100px]
-
-                lg:bg-[length:100vw_auto]
-                lg:bg-[position:center_-200px]
-
-                xl:bg-[length:100vw_auto]
-                xl:bg-[position:center_-250px]
-
-                2xl:bg-[length:100vw_auto]
-                2xl:bg-[position:center_-80px]
-
-                brightness-110
-                saturate-110
-            "
+        absolute inset-0
+        bg-no-repeat
+        bg-cover
+        bg-center
+        brightness-110
+        saturate-110
+    "
                         style={{ backgroundImage: `url(${heroImageDesktop})` }}
                     />
 
@@ -411,80 +422,80 @@ shadow-lg shadow-amber-500/20
   `}</style>
             </section>
             {storeConfig.features?.showBrandCarousel !== false && (
-            <section className="relative bg-white py-8 fade-in-section border-y border-gray-200">
-                <div className="relative z-10 overflow-hidden whitespace-nowrap mx-0 md:mx-[104px]">
-                    <div className="brands-track will-change-transform">
-	                 
-                        <div className="brands-group">
-                            <div className="brand-container">
-                                <img src={afnan} alt="Afnan" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={al} alt="al" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={alhara} alt="alhara" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={armaf} alt="Armaf" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={bharara} alt="Bharara" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={french} alt="French" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={lattafa} alt="Lattafa" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={maison} alt="Maison" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={rasasi} alt="Rasasi" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={ray} alt="Ray" className="brand-img" />
-                            </div>
-                        </div>
+                <section className="relative bg-white py-8 fade-in-section border-y border-gray-200">
+                    <div className="relative z-10 overflow-hidden whitespace-nowrap mx-0 md:mx-[104px]">
+                        <div className="brands-track will-change-transform">
 
-                    
-                        <div className="brands-group" aria-hidden="true">
-                            <div className="brand-container">
-                                <img src={afnan} alt="Afnan" className="brand-img" />
+                            <div className="brands-group">
+                                <div className="brand-container">
+                                    <img src={afnan} alt="Afnan" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={al} alt="al" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={alhara} alt="alhara" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={armaf} alt="Armaf" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={bharara} alt="Bharara" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={french} alt="French" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={lattafa} alt="Lattafa" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={maison} alt="Maison" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={rasasi} alt="Rasasi" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={ray} alt="Ray" className="brand-img" />
+                                </div>
                             </div>
-                            <div className="brand-container">
-                                <img src={al} alt="al" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={alhara} alt="alhara" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={armaf} alt="Armaf" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={bharara} alt="Bharara" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={french} alt="French" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={lattafa} alt="Lattafa" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={maison} alt="Maison" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={rasasi} alt="Rasasi" className="brand-img" />
-                            </div>
-                            <div className="brand-container">
-                                <img src={ray} alt="Ray" className="brand-img" />
+
+
+                            <div className="brands-group" aria-hidden="true">
+                                <div className="brand-container">
+                                    <img src={afnan} alt="Afnan" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={al} alt="al" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={alhara} alt="alhara" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={armaf} alt="Armaf" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={bharara} alt="Bharara" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={french} alt="French" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={lattafa} alt="Lattafa" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={maison} alt="Maison" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={rasasi} alt="Rasasi" className="brand-img" />
+                                </div>
+                                <div className="brand-container">
+                                    <img src={ray} alt="Ray" className="brand-img" />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <style>{`
+                    <style>{`
         .brands-track {
             display: inline-flex;
             animation: brandsScroll 32s linear infinite;
@@ -524,7 +535,7 @@ shadow-lg shadow-amber-500/20
 	            animation-play-state: paused;
 	        } */
 	    `}</style>
-            </section>
+                </section>
             )}
 
 

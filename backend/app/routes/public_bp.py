@@ -6,6 +6,7 @@ from flask import send_from_directory, current_app
 from app.models import ProductImage
 import hashlib
 import json
+from sqlalchemy import text
 from sqlalchemy.orm.attributes import flag_modified
 from app.category_config import PERFUME_CATEGORY_DEFINITIONS
 
@@ -19,6 +20,28 @@ from flask import Blueprint, request, jsonify
 
 
 public_bp = Blueprint('public', __name__)
+ADMIN_SETTINGS_TABLE = "admin_settings"
+HOME_FEATURED_PRODUCTS_KEY = "home_featured_product_ids"
+
+def _is_product_hidden(product):
+    return any(
+        isinstance(item, dict)
+        and item.get("__type") == "multi_category_meta"
+        and item.get("is_active_product") is False
+        for item in (product.flavor_catalog or [])
+    )
+
+def _get_public_setting(key, default=None):
+    row = db.session.execute(
+        text(f"SELECT value FROM {ADMIN_SETTINGS_TABLE} WHERE key = :key"),
+        {"key": key},
+    ).first()
+    if not row:
+        return default
+    try:
+        return json.loads(row[0])
+    except Exception:
+        return default
 
 @public_bp.route('/')
 def home():
@@ -53,7 +76,7 @@ def get_products():
         if search:
             query = query.filter(Product.name.ilike(f'%{search}%'))
         
-        products = query.all()
+        products = [product for product in query.all() if not _is_product_hidden(product)]
         return jsonify([product.serialize() for product in products]), 200
         
     except Exception as e:
@@ -69,6 +92,9 @@ def get_product_by_id(product_id):
         ).first()
         
         if not product:
+            return jsonify({'error': 'Producto no encontrado'}), 404
+
+        if _is_product_hidden(product):
             return jsonify({'error': 'Producto no encontrado'}), 404
             
         return jsonify(product.serialize()), 200
@@ -97,6 +123,7 @@ def get_products_by_category(category_id):
             Product.category_id == category_id,
             Product.is_active == True
         ).all()
+        products = [product for product in products if not _is_product_hidden(product)]
         
         return jsonify({
             'category': category.serialize(),
@@ -105,6 +132,27 @@ def get_products_by_category(category_id):
         
     except Exception as e:
         return jsonify({'error': 'Error al obtener productos de la categoría: ' + str(e)}), 500
+
+@public_bp.route('/home-featured-products', methods=['GET'])
+def get_home_featured_products():
+    try:
+        product_ids = _get_public_setting(HOME_FEATURED_PRODUCTS_KEY, []) or []
+        product_ids = [int(product_id) for product_id in product_ids if int(product_id) > 0]
+        if not product_ids:
+            return jsonify({'product_ids': []}), 200
+
+        products = Product.query.filter(
+            Product.id.in_(product_ids),
+            Product.is_active == True
+        ).all()
+        visible_ids = {
+            int(product.id)
+            for product in products
+            if not _is_product_hidden(product)
+        }
+        return jsonify({'product_ids': [product_id for product_id in product_ids if product_id in visible_ids]}), 200
+    except Exception as e:
+        return jsonify({'error': 'Error al obtener productos destacados: ' + str(e)}), 500
     
 
 @public_bp.route('/send-mail', methods=['POST'])
