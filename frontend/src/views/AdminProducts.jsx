@@ -968,7 +968,7 @@ export default function AdminProducts() {
             const wantsFeatured = Boolean(form.show_on_home);
 
             if (isParentCategoryId(form.category_id)) {
-                alert("Debes seleccionar una subcategoría. Perfumes y Gafas son categorías generales.");
+                alert("Debes seleccionar una subcategoría.");
                 return;
             }
 
