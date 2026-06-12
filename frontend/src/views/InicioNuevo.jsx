@@ -220,7 +220,7 @@ export default function InicioNuevo() {
                             imageMaxWidth: "100%",
                             imageHeight: "auto",
                             imageMinHeight: "auto",
-                            imageMaxHeight: "calc(100vh - 80px)",
+                            imageMaxHeight: "none",
                             imageFit: "contain",
                             imagePosition: "center center",
                             imageOffsetX: "0px",

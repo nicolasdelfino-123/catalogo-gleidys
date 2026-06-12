@@ -44,8 +44,8 @@ export const storeConfig = {
             imageMaxWidth: "100%",
             imageHeight: "auto",
             imageMinHeight: "auto",
-            imageMaxHeight: "calc(100vh - 80px)",
-            imageFit: "cover", // "contain" no recorta | "cover" llena y puede recortar
+            imageMaxHeight: "none",
+            imageFit: "contain", // "contain" no recorta | "cover" llena y puede recortar
             imagePosition: "center center",
             imageOffsetX: "0px",
             imageOffsetY: "0px",
@@ -156,7 +156,7 @@ export const storeConfig = {
 
     media: {
         // Hero desktop: se carga desde frontend/public. Escribi solo el nombre del archivo o una ruta publica, por ejemplo "f3_si.png".
-        heroImageDesktop: "f3_si.png",
+        heroImageDesktop: "porta_si.png",
         // Hero mobile: se carga desde frontend/public. Escribi solo el nombre del archivo o una ruta publica, por ejemplo "f3_si.png".
         heroImageMobile: "f3_si.png",
         // GIF del GlobalSpinner: se carga desde frontend/public. Si queres cambiarlo, pone el GIF en public y actualiza este nombre.
