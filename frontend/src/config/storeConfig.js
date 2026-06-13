@@ -4,7 +4,7 @@ export const storeConfig = {
     features: {
         showHeaderContact: true,
         showBrandCarousel: true,
-        coupon: true,
+        coupon: false,
         headerTheme: "black", // "black" | "white"
         footerTheme: "black", // "black" | "white"
     },
@@ -53,7 +53,7 @@ export const storeConfig = {
 
         mobile: {
             // En mobile el header es fixed; este padding evita que el hero quede debajo.
-            sectionPaddingTop: "80px",
+            sectionPaddingTop: "0px",
             sectionPaddingBottom: "0px",
             sectionMarginTop: "0px",
             sectionMarginBottom: "0px",
@@ -140,6 +140,13 @@ export const storeConfig = {
         whatsapp: "5493534793366",
         whatsappMessage: "Hola, quiero consultar por un perfume del catálogo",
         whatsappDisplay: "+56 9 6407 7278",
+        // Prefijos para el modal de presupuesto. Con un solo elemento se muestra fijo; con varios aparece un selector.
+        phonePrefixes: [
+            /* { label: "+56", value: "56", placeholder: "964077278" }, */
+            { label: "+54", value: "54", placeholder: "3534793366" },
+            /*       { label: "+57", value: "57", placeholder: "3001234567" },
+                  { label: "+58", value: "58", placeholder: "4121234567" }, */
+        ],
 
         instagram: "https://www.instagram.com/danna_decants_puq/",
         instagramDisplay: "@danna_decants_puq",
@@ -158,7 +165,7 @@ export const storeConfig = {
         // Hero desktop: se carga desde frontend/public. Escribi solo el nombre del archivo o una ruta publica, por ejemplo "f3_si.png".
         heroImageDesktop: "porta_si.png",
         // Hero mobile: se carga desde frontend/public. Escribi solo el nombre del archivo o una ruta publica, por ejemplo "f3_si.png".
-        heroImageMobile: "f3_si.png",
+        heroImageMobile: "porta_movil.png",
         // GIF del GlobalSpinner: se carga desde frontend/public. Si queres cambiarlo, pone el GIF en public y actualiza este nombre.
         globalSpinnerGif: "danna_spinner.gif",
         headerLogo: "logo_attar_prueba.png",

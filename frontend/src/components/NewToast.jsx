@@ -54,6 +54,20 @@ export default function NewToast({ toast, onClose }) {
     const pricePrefix = isWholesale ? "$" : "$";
 
     const toastImage = toAbsUrl(data?.product?.image || data?.product?.image_url || "");
+    const hasAction = Boolean(data?.actionLabel);
+
+    const openCart = () => {
+        if (!hasAction) return;
+        window.dispatchEvent(new CustomEvent("open-cart"));
+        setVisible(false);
+        onClose?.();
+    };
+
+    const handleKeyDown = (e) => {
+        if (!hasAction || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        openCart();
+    };
 
     const selectedMl = (() => {
         const raw =
@@ -72,7 +86,14 @@ export default function NewToast({ toast, onClose }) {
             className="fixed top-[2cm] right-4 z-[999999] pointer-events-auto animate-slide-in-right transition-all duration-300 ease-out"
             style={{ fontFamily: "system-ui" }}
         >
-            <div className="bg-[#111113] text-gray-100 px-3 py-2 sm:px-4 sm:py-3 rounded-xl shadow-2xl border border-amber-500/20 flex items-center space-x-3 max-w-[260px] sm:max-w-[320px] backdrop-blur-sm">
+            <div
+                onClick={openCart}
+                onKeyDown={handleKeyDown}
+                role={hasAction ? "button" : undefined}
+                tabIndex={hasAction ? 0 : undefined}
+                className={`bg-[#111113] text-gray-100 px-3 py-2 sm:px-4 sm:py-3 rounded-xl shadow-2xl border border-amber-500/20 flex items-center space-x-3 max-w-[260px] sm:max-w-[320px] backdrop-blur-sm ${hasAction ? "cursor-pointer transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-amber-300/70" : ""}`}
+                aria-label={hasAction ? `${data?.message || "Notificación"}. ${data.actionLabel}` : undefined}
+            >
 
                 {/* Imagen */}
                 {toastImage && (
@@ -101,10 +122,17 @@ export default function NewToast({ toast, onClose }) {
                                 )}
                             </span>
 
-                            <span className="text-xs sm:text-sm font-semibold text-amber-300">
-                                {data.product.price !== null && data.product.price !== undefined
-                                    ? `${pricePrefix}${data.product.price.toLocaleString("es-AR")}`
-                                    : "Consultar"}
+                            <span className="flex items-center gap-2 text-xs sm:text-sm">
+                                <span className="font-semibold text-amber-300">
+                                    {data.product.price !== null && data.product.price !== undefined
+                                        ? `${pricePrefix}${data.product.price.toLocaleString("es-AR")}`
+                                        : "Consultar"}
+                                </span>
+                                {hasAction && (
+                                    <span className="whitespace-nowrap text-xs font-semibold text-white underline decoration-amber-300/60 underline-offset-4">
+                                        {data.actionLabel} &rarr;
+                                    </span>
+                                )}
                             </span>
                         </>
                     )}
@@ -112,7 +140,8 @@ export default function NewToast({ toast, onClose }) {
 
                 {/* Botón cerrar */}
                 <button
-                    onClick={() => {
+                    onClick={(e) => {
+                        e.stopPropagation();
                         setVisible(false);
                         onClose?.();
                     }}

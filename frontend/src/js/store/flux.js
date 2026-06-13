@@ -598,6 +598,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 					isVisible: true,
 					message: data?.message || "",
 					product: data?.product || null,
+					actionLabel: data?.actionLabel || "",
 				};
 
 				console.log("🔥 [FLUX] showToast ->", newToast);
@@ -612,7 +613,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 			hideToast: () => {
 				const store = getStore();
-				const clearedToast = { isVisible: false, message: "", product: null };
+				const clearedToast = { isVisible: false, message: "", product: null, actionLabel: "" };
 				console.log("🧯 [FLUX] hideToast ->", clearedToast);
 				setStore({ ...store, toast: clearedToast });
 			},
@@ -676,6 +677,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 				actions.showToast({
 					message: "Producto agregado al carrito 🛒",
+					actionLabel: "Ver carrito",
 					product: {
 						name: product.name,
 						price: displayPrice,

@@ -209,6 +209,16 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleOpenCart = () => {
+      setCartOpen(true);
+      setIsMenuOpen(false);
+    };
+
+    window.addEventListener("open-cart", handleOpenCart);
+    return () => window.removeEventListener("open-cart", handleOpenCart);
+  }, []);
+
 
   // Cerrar y limpiar búsqueda cuando cambia la ruta
   useEffect(() => {

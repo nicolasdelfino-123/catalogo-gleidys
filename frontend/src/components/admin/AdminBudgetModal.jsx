@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatPrice } from "../../utils/price.js";
+import { storeConfig } from "../../config/storeConfig.js";
 
 const PRICE_MODE_RETAIL = "retail";
 const PRICE_MODE_WHOLESALE = "wholesale";
@@ -20,6 +21,33 @@ const getBasePrice = (item, priceMode) => {
 const normalizeDigits = (value = "") => String(value || "").replace(/[^\d]/g, "");
 const sanitizePriceDraft = (value = "") =>
     String(value || "").replace(/[^\d,.\s]/g, "").replace(/\s+/g, "");
+
+const normalizePhonePrefixOption = (option) => {
+    if (typeof option === "string" || typeof option === "number") {
+        const value = normalizeDigits(option);
+        return value ? { label: `+${value}`, value, placeholder: "" } : null;
+    }
+
+    if (!option || typeof option !== "object") return null;
+
+    const value = normalizeDigits(option.value || option.prefix || option.code || option.phonePrefix);
+    if (!value) return null;
+
+    return {
+        label: option.label || `+${value}`,
+        value,
+        placeholder: option.placeholder || "",
+    };
+};
+
+const getPhonePrefixOptions = () => {
+    const configured = storeConfig.contact?.phonePrefixes || ["56"];
+    const options = (Array.isArray(configured) ? configured : Object.values(configured))
+        .map(normalizePhonePrefixOption)
+        .filter(Boolean);
+
+    return options.length > 0 ? options : [{ label: "+56", value: "56", placeholder: "" }];
+};
 
 const parsePriceDraft = (value = "") => {
     const raw = sanitizePriceDraft(value);
@@ -95,11 +123,13 @@ export default function AdminBudgetModal({
     onClose = () => { },
     onRemoveItem = () => { },
 }) {
+    const phonePrefixOptions = useMemo(() => getPhonePrefixOptions(), []);
     const [priceMode, setPriceMode] = useState(PRICE_MODE_RETAIL);
     const [prices, setPrices] = useState({});
     const [editingId, setEditingId] = useState(null);
     const [editingDraft, setEditingDraft] = useState("");
     const [customerName, setCustomerName] = useState("");
+    const [phonePrefix, setPhonePrefix] = useState(phonePrefixOptions[0]?.value || "56");
     const [phone, setPhone] = useState("");
     const [showPreview, setShowPreview] = useState(false);
     const [manualItems, setManualItems] = useState([]);
@@ -130,6 +160,7 @@ export default function AdminBudgetModal({
 
         setPriceMode(PRICE_MODE_RETAIL);
         setCustomerName("");
+        setPhonePrefix(phonePrefixOptions[0]?.value || "56");
         setPhone("");
         setShowPreview(false);
         setEditingId(null);
@@ -137,7 +168,7 @@ export default function AdminBudgetModal({
         setManualItems([]);
         setShowAddProduct(false);
         setNewProduct(emptyNewProduct);
-    }, [open]);
+    }, [open, phonePrefixOptions]);
 
     useEffect(() => {
         if (!open) return;
@@ -184,7 +215,8 @@ export default function AdminBudgetModal({
 
     if (!open) return null;
 
-    const canSend = budgetItems.length > 0 && customerName.trim() && normalizeDigits(phone).length >= 8;
+    const selectedPhonePrefix = phonePrefixOptions.find((option) => option.value === phonePrefix) || phonePrefixOptions[0];
+    const canSend = budgetItems.length > 0 && customerName.trim() && selectedPhonePrefix?.value && normalizeDigits(phone).length >= 8;
 
     const applyCustomQuantity = () => {
         const qty = Math.max(1, Number(newProduct.quantityDraft) || 1);
@@ -531,14 +563,31 @@ export default function AdminBudgetModal({
                         <label className="block">
                             <span className="block text-sm font-medium text-stone-700 mb-1">WhatsApp del cliente</span>
                             <div className="flex items-center border rounded-lg overflow-hidden">
-                                <span className="px-3 py-2 bg-stone-50 text-stone-600 border-r">+54</span>
+                                {phonePrefixOptions.length > 1 ? (
+                                    <select
+                                        value={phonePrefix}
+                                        onChange={(e) => setPhonePrefix(e.target.value)}
+                                        className="max-w-[150px] border-r bg-stone-50 px-3 py-2 text-stone-700 outline-none"
+                                        aria-label="Prefijo telefónico"
+                                    >
+                                        {phonePrefixOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span className="px-3 py-2 bg-stone-50 text-stone-600 border-r">
+                                        {selectedPhonePrefix.label}
+                                    </span>
+                                )}
                                 <input
                                     type="text"
                                     inputMode="numeric"
                                     value={phone}
                                     onChange={(e) => setPhone(normalizeDigits(e.target.value))}
                                     className="w-full px-3 py-2 outline-none"
-                                    placeholder="35334793366"
+                                    placeholder={selectedPhonePrefix.placeholder || "Número sin prefijo"}
                                 />
                             </div>
                         </label>
@@ -565,7 +614,7 @@ export default function AdminBudgetModal({
                                 type="button"
                                 disabled={!canSend}
                                 onClick={() => {
-                                    const fullPhone = `54${normalizeDigits(phone)}`;
+                                    const fullPhone = `${selectedPhonePrefix.value}${normalizeDigits(phone)}`;
                                     const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(messagePreview)}`;
                                     window.open(url, "_blank", "noopener,noreferrer");
                                 }}
