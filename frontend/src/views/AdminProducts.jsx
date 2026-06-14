@@ -30,11 +30,6 @@ import {
 
 
 
-const normalizeCategoryLabel = (value = "") =>
-    String(value || "")
-        .trim()
-        .toLowerCase();
-
 const parseFlexibleDecimal = (value) => {
     if (value === "" || value === null || value === undefined) return null;
 
@@ -426,6 +421,11 @@ const isParentCategoryId = (categoryId) => {
     return Boolean(category?.children?.length);
 };
 
+const getCategoryAndDescendantIds = (category) => [
+    Number(category.id),
+    ...(category.children || []).flatMap(getCategoryAndDescendantIds),
+];
+
 const getExtraCategoryIds = (product = {}, { includeBestSellers = false } = {}) => {
     const primaryId = Number(product?.category_id);
     const rawIds = Array.isArray(product?.extra_category_ids)
@@ -456,8 +456,11 @@ export default function AdminProducts() {
     const priceAdjustmentEnabled = storeConfig.features?.priceAdjustment === true;
     const bestSellersEnabled = storeConfig.features?.bestSellers === true;
     const [products, setProducts] = useState([])
-    const categories = PERFUME_CATEGORY_DEFINITIONS
-    const defaultCategory = PERFUME_CATEGORY_DEFINITIONS[0]
+    const selectableCategories = PERFUME_CATEGORY_DEFINITIONS.filter((category) =>
+        Number(category.id) !== BEST_SELLERS_CATEGORY_ID &&
+        !category.children?.length
+    )
+    const defaultCategory = selectableCategories[0] || PERFUME_CATEGORY_DEFINITIONS[0]
     const defaultCategoryId = defaultCategory?.id || 1
     const defaultCategoryName = defaultCategory?.name || "Sin categoría"
     const [form, setForm] = useState(null)
@@ -1451,6 +1454,17 @@ export default function AdminProducts() {
 
     const selectedBudgetCount = selectedBudgetItems.length;
 
+    const selectedCategoryFilterId = selectedCategory.startsWith("cat:")
+        ? Number(selectedCategory.replace("cat:", ""))
+        : null;
+    const selectedCategoryFilter = Number.isFinite(selectedCategoryFilterId)
+        ? PERFUME_CATEGORY_DEFINITIONS.find((category) => Number(category.id) === selectedCategoryFilterId)
+        : null;
+    const selectedCategoryFilterIds = selectedCategoryFilter
+        ? getCategoryAndDescendantIds(selectedCategoryFilter)
+        : [];
+    const selectedCategoryFilterLabel = selectedCategoryFilter?.name || selectedCategory;
+
     const filtered = products.filter((p) => {
         const matchesSearch =
             !q ||
@@ -1461,9 +1475,9 @@ export default function AdminProducts() {
             selectedCategory === "Todos" ||
             (selectedCategory === HOME_CATEGORY_FILTER && featuredProductIds.includes(Number(p.id))) ||
             (
-                selectedCategory !== HOME_CATEGORY_FILTER &&
+                selectedCategoryFilterIds.length > 0 &&
                 getProductCategoryIds(p).some((categoryId) =>
-                    normalizeCategoryLabel(ID_TO_CATEGORY_NAME[categoryId]) === normalizeCategoryLabel(selectedCategory)
+                    selectedCategoryFilterIds.includes(Number(categoryId))
                 )
             );
 
@@ -1491,7 +1505,7 @@ export default function AdminProducts() {
             ? { key: "search", label: `Busqueda: ${q.trim()}`, onClear: () => setQ("") }
             : null,
         selectedCategory !== "Todos"
-            ? { key: "category", label: `Categoria: ${selectedCategory}`, onClear: () => setSelectedCategory("Todos") }
+            ? { key: "category", label: `Categoria: ${selectedCategoryFilterLabel}`, onClear: () => setSelectedCategory("Todos") }
             : null,
         selectedStatus !== "todos"
             ? {
@@ -1580,11 +1594,16 @@ export default function AdminProducts() {
                     >
                         <option value="Todos">Todas las categorías</option>
                         <option value={HOME_CATEGORY_FILTER}>Inicio</option>
-                        {categories.map((cat) => (
-                            <option key={cat.id} value={cat.name}>
-                                {cat.level > 0 ? `${cat.emoji} ${cat.name}` : cat.name}
-                            </option>
-                        ))}
+                        {PERFUME_CATEGORY_TREE.flatMap((cat) => [
+                            <option key={cat.id} value={`cat:${cat.id}`}>
+                                {cat.name}
+                            </option>,
+                            ...(cat.children || []).map((child) => (
+                                <option key={child.id} value={`cat:${child.id}`}>
+                                    {child.emoji} {child.name}
+                                </option>
+                            )),
+                        ])}
                     </select>
                 </div>
                 <div className="flex flex-col min-w-0">
