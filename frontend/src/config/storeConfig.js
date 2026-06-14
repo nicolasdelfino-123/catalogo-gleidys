@@ -162,9 +162,9 @@ export const storeConfig = {
     },
 
     contact: {
-        whatsapp: "573135043451 ",
+        whatsapp: "573135043451",
         whatsappMessage: "Hola, quiero consultar por un perfume del catálogo",
-        whatsappDisplay: "+57 313 504 3451",
+        whatsappDisplay: "+57 313 5043451",
         // Prefijos para el modal de presupuesto. Con un solo elemento se muestra fijo; con varios aparece un selector.
         phonePrefixes: [
             /* { label: "+56", value: "56", placeholder: "964077278" }, */
@@ -174,8 +174,8 @@ export const storeConfig = {
                    */
         ],
 
-        instagram: "https://www.instagram.com/danna_decants_puq/",
-        instagramDisplay: "@danna_decants_puq",
+        instagram: "https://www.instagram.com/ele_parfum/",
+        instagramDisplay: "@ele_parfum",
 
         email: "nicolasdelfino585@gmail.com",
         /*  emailDisplay: "nicolasdelfino585@gmail.com", */
