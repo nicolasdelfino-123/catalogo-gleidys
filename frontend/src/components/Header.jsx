@@ -317,7 +317,7 @@ export default function Header() {
 
       >
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 py-3">
 
 
@@ -336,7 +336,7 @@ export default function Header() {
               </button>
             </div>
             {/* Logo centrado */}
-            <div className="absolute left-1/2 lg:left-[calc(28%+10cm)] -translate-x-1/2 pointer-events-none">
+            <div className="header-logo-position absolute left-1/2 -translate-x-1/2 pointer-events-none">
               <Link to={withWholesale("/inicio")} aria-label="Ir al inicio" className="pointer-events-auto">
                 <img
                   src={headerLogo}
@@ -345,6 +345,14 @@ export default function Header() {
                 />
               </Link>
             </div>
+
+            <style>{`
+              @media (min-width: 1024px) {
+                .header-logo-position {
+                  left: 720px;
+                }
+              }
+            `}</style>
 
             {/* Navigation - Desktop */}
             <nav className="hidden lg:flex h-full items-center gap-7 font-serif tracking-wider text-sm uppercase">
