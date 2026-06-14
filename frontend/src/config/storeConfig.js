@@ -2,12 +2,12 @@ export const storeConfig = {
     storeName: " Store Perfumes",
 
     features: {
-        showHeaderContact: true,
+        showHeaderContact: false,
         showBrandCarousel: true,
         coupon: false,
         priceAdjustment: false,
         // Activa/desactiva la categoría virtual "Más Vendidos" en header, footer, filtros, admin y modal de productos.
-        bestSellers: true,
+        bestSellers: false,
         headerTheme: "black", // "black" | "white"
         footerTheme: "black", // "black" | "white"
     },
@@ -22,7 +22,7 @@ export const storeConfig = {
         footer: {
             colors: {
                 white: "#ffffff",
-                black: "#0b0b0d",
+                black: "#040404",
             },
         },
     },
@@ -36,7 +36,7 @@ export const storeConfig = {
     currency: {
         // Texto visible antes de los precios en cards, detalle, carrito, admin, toast y presupuestos.
         // Ejemplos: "$", "COP", "USD", "CLP", "S/"
-        symbol: "$",
+        symbol: "COP",
     },
 
     hero: {
@@ -117,24 +117,40 @@ export const storeConfig = {
         categories: [
             {
                 id: 1,
-                label: "Perfumes",
-                slug: "perfumes",
+                label: "Perfumes Árabes",
+                navLabel: "Árabes",
+                navOrder: 1,
+                slug: "perfumes-arabes",
                 emoji: "✨",
                 children: [
-                    { id: 3, label: "Femeninos", slug: "femeninos", emoji: "🌸" },
-                    { id: 4, label: "Masculinos", slug: "masculinos", emoji: "🖤" },
-                    { id: 5, label: "Unisex", slug: "unisex", emoji: "✨" },
+                    { id: 5, label: "Masculinos", slug: "masculinos", emoji: "🖤" },
+                    { id: 6, label: "Femeninos", slug: "femeninos", emoji: "🌸" },
+                    { id: 7, label: "Unisex", slug: "unisex", emoji: "✨" },
                 ],
             },
             {
                 id: 2,
-                label: "Gafas",
-                slug: "gafas",
-                emoji: "🕶️",
-                children: [
-                    { id: 6, label: "Ray-Ban", slug: "ray-ban", emoji: "🕶️" },
-                    { id: 7, label: "Scuderia Ferrari", slug: "scuderia-ferrari", emoji: "🏎️" },
-                ],
+                label: "Perfumes de Diseñador",
+                navLabel: "Diseñador",
+                navOrder: 3,
+                slug: "perfumes-de-disenador",
+                emoji: "◆",
+            },
+            {
+                id: 3,
+                label: "Perfumes de Nicho",
+                navLabel: "Nicho",
+                navOrder: 2,
+                slug: "perfumes-de-nicho",
+                emoji: "★",
+            },
+            {
+                id: 4,
+                label: "Victoria’s Secret",
+                navLabel: "Victoria’s Secret",
+                navOrder: 4,
+                slug: "victorias-secret",
+                emoji: "♡",
             },
         ],
     },
@@ -172,13 +188,13 @@ export const storeConfig = {
 
     media: {
         // Hero desktop: se carga desde frontend/public. Escribi solo el nombre del archivo o una ruta publica, por ejemplo "f3_si.png".
-        heroImageDesktop: "porta_si.png",
+        heroImageDesktop: "porta.jpeg",
         // Hero mobile: se carga desde frontend/public. Escribi solo el nombre del archivo o una ruta publica, por ejemplo "f3_si.png".
-        heroImageMobile: "porta_movil.png",
+        heroImageMobile: "porta_movil.jpeg",
         // GIF del GlobalSpinner: se carga desde frontend/public. Si queres cambiarlo, pone el GIF en public y actualiza este nombre.
-        globalSpinnerGif: "danna_spinner.gif",
-        headerLogo: "logo_attar_prueba.png",
-        footerLogo: "logo_danna.jpeg",
+        globalSpinnerGif: "gif_ele.gif",
+        headerLogo: "header_sisi.png",
+        footerLogo: "pp.png",
     },
 
     map: {

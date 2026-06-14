@@ -144,7 +144,7 @@ export default function SidebarFiltersNuevo({
 
     // ⚠️ sin h-full (rompe sticky); nada de overflow aquí
     const body = (
-        <div className="w-64 max-w-[80vw] bg-white border-r p-4 space-y-6 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto md:pr-2">
+        <div className="w-72 max-w-[88vw] bg-white border-r p-4 space-y-6 md:max-h-[calc(100vh-7rem)] md:overflow-y-auto md:pr-2">
             <div className="md:hidden flex justify-between items-center mb-2">
                 <h3 className="text-lg font-serif font-semibold tracking-wide text-[#232325]">Filtros</h3>
                 <button onClick={() => setOpen(false)} className="px-3 py-1 border border-stone-300 rounded font-serif text-sm text-stone-700 hover:border-black hover:text-black transition-colors">
@@ -221,7 +221,7 @@ export default function SidebarFiltersNuevo({
                                         : "text-stone-700 hover:text-[#d4af37] hover:border-[#d4af37]"
                                         }`}
                                 >
-                                    <span>{c.name}</span>
+                                    <span className="whitespace-nowrap">{c.name}</span>
                                     {hasChildren && (
                                         <span className={`transition-transform ${expanded ? "rotate-90" : ""}`}>›</span>
                                     )}
@@ -242,7 +242,7 @@ export default function SidebarFiltersNuevo({
                                                 }
                                                 setOpen(false);
                                             }}
-                                            className={`w-full text-left py-2 pl-4 border-b border-stone-100 font-serif text-sm transition-all duration-300 focus:outline-none ${childActive
+                                            className={`w-full whitespace-nowrap text-left py-2 pl-4 border-b border-stone-100 font-serif text-sm transition-all duration-300 focus:outline-none ${childActive
                                                 ? "text-[#232325] font-semibold border-[#232325]"
                                                 : "text-stone-600 hover:text-[#d4af37] hover:border-[#d4af37]"
                                                 }`}

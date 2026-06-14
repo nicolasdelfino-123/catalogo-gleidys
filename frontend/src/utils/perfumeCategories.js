@@ -85,6 +85,8 @@ const buildCategoryTree = (categories = [], parentId = null, level = 0) =>
             return {
                 id,
                 name,
+                navLabel: String(category?.navLabel || "").trim() || name,
+                navOrder: Number.isFinite(Number(category?.navOrder)) ? Number(category.navOrder) : null,
                 slug,
                 emoji: getCategoryEmoji(category, name),
                 parentId,
@@ -98,6 +100,8 @@ const buildCategoryTree = (categories = [], parentId = null, level = 0) =>
 const fallbackTree = PERFUME_CATEGORY_ID_DEFINITIONS.map((category) => ({
     id: category.id,
     name: category.fallbackName,
+    navLabel: category.fallbackName,
+    navOrder: null,
     slug: category.slug,
     emoji: getCategoryEmoji(category, category.fallbackName),
     parentId: null,

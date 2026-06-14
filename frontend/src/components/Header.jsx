@@ -26,13 +26,6 @@ const headerLinkClass = isWhiteHeader
 const headerIconClass = isWhiteHeader
   ? "text-gray-950 hover:text-gray-600"
   : "text-gray-300 hover:text-amber-300";
-const dropdownSurfaceClass = isWhiteHeader
-  ? "bg-white border border-gray-200 border-t-0"
-  : "bg-[#111113] border border-amber-500/20 border-t-0";
-const dropdownTopBorderClass = isWhiteHeader ? "border-gray-200" : "border-amber-500/60";
-const dropdownLinkClass = isWhiteHeader
-  ? "text-gray-900 hover:text-gray-600 hover:bg-gray-50 border-gray-100"
-  : "text-gray-300 hover:text-amber-300 hover:bg-[#1a1a1d] border-amber-500/10";
 const mobileMenuSurfaceClass = isWhiteHeader
   ? "bg-white border-t border-gray-200"
   : "bg-[#111113] border-t border-amber-500/20";
@@ -161,8 +154,6 @@ export default function Header() {
   const { store, actions } = useContext(Context);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const [productsDropdownOpen, setProductsDropdownOpen] = useState(false);
-  const [activeProductCategoryRoute, setActiveProductCategoryRoute] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const searchBoxRef = useRef(null);
@@ -172,29 +163,9 @@ export default function Header() {
   const [mobileCategoryOpen, setMobileCategoryOpen] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
 
-  const productsCloseTimer = useRef(null);
-
-
-
-  // Referencias para el dropdown
-  const productsDropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   const [isScrolled, setIsScrolled] = useState(false);
-
-  // Cerrar dropdown cuando se hace click fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (productsDropdownRef.current && !productsDropdownRef.current.contains(event.target)) {
-        setProductsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -269,20 +240,19 @@ export default function Header() {
 
   const cartItemsCount = (store.cart || []).reduce((t, i) => t + (i.quantity || 0), 0);
 
-  const productCategories = PERFUME_CATEGORY_TREE.map((category) => ({
+  const productCategories = PERFUME_CATEGORY_TREE.map((category, index) => ({
     name: category.name,
+    navName: category.navLabel || category.name,
+    navOrder: Number.isFinite(category.navOrder) ? category.navOrder : index + 100,
     route: `/categoria/${category.slug}`,
     icon: category.emoji || "•",
     children: (category.children || []).map((child) => ({
       name: child.name,
+      navName: child.navLabel || child.name,
       route: `/categoria/${child.slug}`,
       icon: child.emoji || "•",
     })),
-  }));
-  const activeProductCategory =
-    productCategories.find((category) => category.route === activeProductCategoryRoute) ||
-    productCategories.find((category) => category.children.length > 0) ||
-    null;
+  })).sort((a, b) => a.navOrder - b.navOrder);
 
   const goToContact = (e) => {
     e.preventDefault();
@@ -366,154 +336,30 @@ export default function Header() {
               </button>
             </div>
             {/* Logo centrado */}
-            <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
+            <div className="absolute left-1/2 lg:left-[calc(28%+10cm)] -translate-x-1/2 pointer-events-none">
               <Link to={withWholesale("/inicio")} aria-label="Ir al inicio" className="pointer-events-auto">
                 <img
                   src={headerLogo}
                   alt={storeConfig.storeName.trim()}
-                  className="mt-[-0px] lg:mt-[-0px] h-[55px] lg:h-[55px] object-contain transition-all duration-300"
+                  className="mt-[10px] lg:mt-[10px] h-[125px] lg:h-[125px] object-contain transition-all duration-300"
                 />
               </Link>
             </div>
 
             {/* Navigation - Desktop */}
-            <nav className="hidden lg:flex h-full items-center space-x-10 font-serif tracking-wider text-sm uppercase">
+            <nav className="hidden lg:flex h-full items-center gap-7 font-serif tracking-wider text-sm uppercase">
               <Link to={withWholesale("/inicio")} className={`${headerLinkClass} transition-all duration-300`}>Inicio</Link>
 
-
-              {/* Dropdown de Productos */}
-              <div className="relative h-full flex items-center" ref={productsDropdownRef}
-                onMouseEnter={() => {
-                  if (productsCloseTimer.current) clearTimeout(productsCloseTimer.current);
-                  setProductsDropdownOpen(true);
-                  if (!activeProductCategoryRoute) {
-                    const firstWithChildren = productCategories.find((category) => category.children.length > 0);
-                    setActiveProductCategoryRoute(firstWithChildren?.route || "");
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (productsCloseTimer.current) clearTimeout(productsCloseTimer.current);
-                  productsCloseTimer.current = setTimeout(() => {
-                    setProductsDropdownOpen(false);
-                  }, 180);
-                }}
-              >
-                <button
-                  onClick={() => {
-                    const nextOpen = !productsDropdownOpen;
-                    setProductsDropdownOpen(nextOpen);
-                    if (nextOpen && !activeProductCategoryRoute) {
-                      const firstWithChildren = productCategories.find((category) => category.children.length > 0);
-                      setActiveProductCategoryRoute(firstWithChildren?.route || "");
-                    }
-                  }}
-                  className={`flex items-center ${headerLinkClass} transition-all duration-300 bg-transparent p-0 border-0 rounded-none appearance-none focus:outline-none focus:ring-0 hover:bg-transparent active:bg-transparent uppercase`}
-                  style={{ backgroundColor: 'transparent', boxShadow: 'none' }}
+              {productCategories.map((category) => (
+                <Link
+                  key={category.route}
+                  to={withWholesale(category.route)}
+                  className={`${headerLinkClass} whitespace-nowrap transition-all duration-300`}
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 >
-
-                  Productos
-                  <svg
-                    className={`ml-1 w-4 h-4 transition-transform ${productsDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Dropdown Menu */}
-                <div
-                  className={`absolute left-0 top-full -mt-px w-[38rem] ${dropdownSurfaceClass}
-  rounded-b-xl rounded-t-none
-  shadow-2xl
-  backdrop-blur-lg z-50 overflow-hidden
-  transition-all duration-200 ease-out
-  ${productsDropdownOpen ? "opacity-100 translate-y-0 visible" : "opacity-0 -translate-y-2 invisible"}
-`}
-                >
-
-                  <div className={`grid grid-cols-[17rem_1fr] border-t-2 ${dropdownTopBorderClass}`}>
-                    <div className={`py-3 border-r ${isWhiteHeader ? "border-gray-100" : "border-amber-500/10"}`}>
-                      <Link
-                        to={withWholesale("/products")}
-                        className={`flex items-center px-5 py-3 text-[15px] ${dropdownLinkClass} transition-all duration-200`}
-                        onClick={() => {
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                          setProductsDropdownOpen(false);
-                        }}
-                      >
-                        Ver todos los productos
-                      </Link>
-                      {productCategories.map((category) => {
-                        const hasChildren = category.children.length > 0;
-                        const active = activeProductCategory?.route === category.route;
-
-                        if (!hasChildren) {
-                          return (
-                            <Link
-                              key={category.route}
-                              to={withWholesale(category.route)}
-                              className={`block px-5 py-3 text-[15px] ${dropdownLinkClass} transition-all duration-200`}
-                              onClick={() => {
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                                setProductsDropdownOpen(false);
-                              }}
-                            >
-                              <span className="mr-3 text-base opacity-80">{category.icon}</span>
-                              {category.name}
-                            </Link>
-                          );
-                        }
-
-                        return (
-                          <button
-                            key={category.route}
-                            type="button"
-                            onMouseEnter={() => setActiveProductCategoryRoute(category.route)}
-                            onClick={() => setActiveProductCategoryRoute(category.route)}
-                            className={`flex w-full items-center justify-between px-5 py-3 text-left text-[15px] transition-all duration-200 bg-transparent border-0 rounded-none ${active
-                              ? (isWhiteHeader ? "bg-gray-50 text-gray-950" : "bg-[#1a1a1d] text-amber-300")
-                              : dropdownLinkClass
-                              }`}
-                          >
-                            <span><span className="mr-3 text-base opacity-80">{category.icon}</span>{category.name.toUpperCase()}</span>
-                            <span aria-hidden="true" className="text-lg leading-none">›</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="py-3">
-                      {activeProductCategory?.children?.length > 0 ? (
-                        <>
-                          <div className={`px-5 pb-2 text-[13px] uppercase tracking-wider ${isWhiteHeader ? "text-gray-500" : "text-gray-500"}`}>
-                            {activeProductCategory.name.toUpperCase()}
-                          </div>
-                          {activeProductCategory.children.map((child) => (
-                            <Link
-                              key={child.route}
-                              to={withWholesale(child.route)}
-                              className={`block whitespace-nowrap px-5 py-3 text-[15px] normal-case tracking-normal ${dropdownLinkClass} transition-colors`}
-                              onClick={() => {
-                                window.scrollTo({ top: 0, behavior: "smooth" });
-                                setProductsDropdownOpen(false);
-                              }}
-                            >
-                              {child.name}
-                            </Link>
-                          ))}
-                        </>
-                      ) : (
-                        <div className={`px-5 py-3 text-[15px] ${isWhiteHeader ? "text-gray-500" : "text-gray-500"}`}>
-                          Selecciona una categoría
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+                  {category.navName}
+                </Link>
+              ))}
 
               {/*  <Link
               to="/mayorista"
@@ -816,7 +662,7 @@ export default function Header() {
                               className={`flex w-full items-center justify-between gap-3 bg-transparent p-0 text-left ${headerLinkClass} transition-colors`}
                               onClick={() => setMobileCategoryOpen((current) => current === category.route ? null : category.route)}
                             >
-                              <span>{category.icon} {category.name}</span>
+                              <span>{category.icon} {category.navName}</span>
                               <span className={`block text-lg leading-none transition-transform ${expanded ? "rotate-90" : ""}`}>›</span>
                             </button>
                           ) : (
@@ -825,7 +671,7 @@ export default function Header() {
                               className={`block ${headerLinkClass} transition-colors`}
                               onClick={() => setIsMenuOpen(false)}
                             >
-                              {category.icon} {category.name}
+                              {category.icon} {category.navName}
                             </Link>
                           )}
 
@@ -838,7 +684,7 @@ export default function Header() {
                                   className={`truncate text-[15px] ${mobileMutedClass} hover:text-amber-300 transition-colors`}
                                   onClick={() => setIsMenuOpen(false)}
                                 >
-                                  {child.name}
+                                  {child.navName}
                                 </Link>
                               ))}
                             </div>

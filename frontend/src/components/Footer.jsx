@@ -6,6 +6,7 @@ import { PERFUME_CATEGORY_TREE as FOOTER_CATEGORIES } from '../utils/perfumeCate
 import { storeConfig } from "../config/storeConfig";
 
 const logofooter = `/${storeConfig.media.footerLogo}`;
+const mobileLogoFooter = "/psi.png";
 
 const phone = storeConfig.contact.whatsapp;
 const message = encodeURIComponent(storeConfig.contact.whatsappMessage);
@@ -30,11 +31,16 @@ const Footer = () => {
             <footer className={`${footerTextClass} py-12 font-serif`} style={{ backgroundColor: footerBackgroundColor }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
-                        <div className="flex flex flex-col items-center">
+                        <div className="flex flex-col items-center">
+                            <img
+                                src={mobileLogoFooter}
+                                alt="Shatha"
+                                className="block md:hidden h-[100px] w-[250px] mt-4 mb-8 opacity-95 object-contain"
+                            />
                             <img
                                 src={logofooter}
                                 alt="Shatha"
-                                className="h-[190px] w-[180px] md:h-[220px] md:w-[220px] mt-[-20px] md:mt-[-10px] mb-[10px] md:mb-[20px] opacity-95 object-contain"
+                                className="hidden md:block md:h-[260px] md:w-[260px] md:mt-[-45px] md:mb-[10px] opacity-95 object-contain"
                             />
 
                             <p className={`${footerMutedClass} text-sm max-w-xs -mt-5 text-center`}>
