@@ -116,20 +116,20 @@ export const storeConfig = {
         // slug es opcional; si no lo ponés, usa el slug técnico definido en perfumeCategories o lo genera desde el label.
         categories: [
             {
-                id: 1,
+                id: 100,
                 label: "Perfumes Árabes",
                 navLabel: "Árabes",
                 navOrder: 1,
                 slug: "perfumes-arabes",
                 emoji: "✨",
                 children: [
-                    { id: 5, label: "Masculinos", slug: "masculinos", emoji: "🖤" },
-                    { id: 6, label: "Femeninos", slug: "femeninos", emoji: "🌸" },
-                    { id: 7, label: "Unisex", slug: "unisex", emoji: "✨" },
+                    { id: 1, label: "Masculinos", slug: "masculinos", emoji: "🖤" },
+                    { id: 2, label: "Femeninos", slug: "femeninos", emoji: "🌸" },
+                    { id: 3, label: "Unisex", slug: "unisex", emoji: "✨" },
                 ],
             },
             {
-                id: 2,
+                id: 4,
                 label: "Perfumes de Diseñador",
                 navLabel: "Diseñador",
                 navOrder: 3,
@@ -137,7 +137,7 @@ export const storeConfig = {
                 emoji: "◆",
             },
             {
-                id: 3,
+                id: 5,
                 label: "Perfumes de Nicho",
                 navLabel: "Nicho",
                 navOrder: 2,
@@ -145,7 +145,7 @@ export const storeConfig = {
                 emoji: "★",
             },
             {
-                id: 4,
+                id: 6,
                 label: "Victoria’s Secret",
                 navLabel: "Victoria’s Secret",
                 navOrder: 4,
