@@ -1157,7 +1157,13 @@ export default function AdminProducts() {
             const wasFeatured = currentProductId ? featuredProductIds.includes(currentProductId) : false;
             const wantsFeatured = Boolean(form.show_on_home);
 
-            if (isParentCategoryId(form.category_id)) {
+            const selectedCategoryId = Number(form.category_id);
+            if (!Number.isFinite(selectedCategoryId) || selectedCategoryId <= 0) {
+                alert("Debes seleccionar una categoría.");
+                return;
+            }
+
+            if (isParentCategoryId(selectedCategoryId)) {
                 alert("Debes seleccionar una subcategoría.");
                 return;
             }
@@ -1640,8 +1646,8 @@ export default function AdminProducts() {
                 )}
                 <button
                     onClick={() => setForm({
-                        category_id: defaultCategoryId,
-                        category_name: defaultCategoryName,
+                        category_id: "",
+                        category_name: "",
                         extra_category_ids: [],
                         multi_category_enabled: false,
                         extra_category_draft: "",
@@ -2955,6 +2961,18 @@ export default function AdminProducts() {
                                         const categoryId = parseInt(e.target.value);
                                         if (form.multi_category_enabled) {
                                             setForm((prev) => ({ ...prev, extra_category_draft: e.target.value }));
+                                            return;
+                                        }
+
+                                        if (!Number.isFinite(categoryId) || categoryId <= 0) {
+                                            setForm({
+                                                ...form,
+                                                category_id: "",
+                                                category_name: "",
+                                                extra_category_ids: [],
+                                                flavor_enabled: false,
+                                                flavors: [],
+                                            });
                                             return;
                                         }
 

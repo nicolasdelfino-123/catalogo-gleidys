@@ -162,15 +162,16 @@ export const storeConfig = {
     },
 
     contact: {
-        whatsapp: "5493534793366",
+        whatsapp: "573135043451 ",
         whatsappMessage: "Hola, quiero consultar por un perfume del catálogo",
-        whatsappDisplay: "+56 9 6407 7278",
+        whatsappDisplay: "+57 313 504 3451",
         // Prefijos para el modal de presupuesto. Con un solo elemento se muestra fijo; con varios aparece un selector.
         phonePrefixes: [
             /* { label: "+56", value: "56", placeholder: "964077278" }, */
-            { label: "+54", value: "54", placeholder: "3534793366" },
+            { label: "+57", value: "57", placeholder: "3001234567" },
+            { label: "+58", value: "58", placeholder: "4121234567" },
             /*       { label: "+57", value: "57", placeholder: "3001234567" },
-                  { label: "+58", value: "58", placeholder: "4121234567" }, */
+                   */
         ],
 
         instagram: "https://www.instagram.com/danna_decants_puq/",
