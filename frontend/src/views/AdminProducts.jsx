@@ -1160,7 +1160,11 @@ export default function AdminProducts() {
             const wasFeatured = currentProductId ? featuredProductIds.includes(currentProductId) : false;
             const wantsFeatured = Boolean(form.show_on_home);
 
-            const selectedCategoryId = Number(form.category_id);
+            const normalizedManualExtraCategoryIds = form.multi_category_enabled
+                ? getExtraCategoryIds(form)
+                : [];
+            const [fallbackPrimaryCategoryId, ...fallbackExtraCategoryIds] = normalizedManualExtraCategoryIds;
+            const selectedCategoryId = Number(form.category_id || fallbackPrimaryCategoryId);
             if (!Number.isFinite(selectedCategoryId) || selectedCategoryId <= 0) {
                 alert("Debes seleccionar una categoría.");
                 return;
@@ -1188,7 +1192,7 @@ export default function AdminProducts() {
             }))
 
             const activeFlavors = catalog.filter((x) => x.active).map((x) => x.name)
-            const enabled = shouldShowFlavors(form.category_id) && activeFlavors.length > 0
+            const enabled = shouldShowFlavors(selectedCategoryId) && activeFlavors.length > 0
 
             // 🔒 Sanitiza y evita valores tipo "frutal" que causarían GET /frutal
             const normalizedImageUrl = (() => {
@@ -1198,7 +1202,11 @@ export default function AdminProducts() {
                 if (u.startsWith("/")) return normalizeImagePath(u); // relativo válido → normaliza /public
                 return "";                                     // invalida textos sueltos (evita 404 /frutal)
             })();
-            const cleanForm = { ...form };
+            const cleanForm = {
+                ...form,
+                category_id: selectedCategoryId,
+                category_name: ID_TO_CATEGORY_NAME[selectedCategoryId] || defaultCategoryName,
+            };
             delete cleanForm.image_urls;
             delete cleanForm.volume_stock;
             delete cleanForm.show_on_home;
@@ -1206,7 +1214,7 @@ export default function AdminProducts() {
             delete cleanForm.multi_category_enabled;
             delete cleanForm.extra_category_draft;
             const manualExtraCategoryIds = form.multi_category_enabled
-                ? getExtraCategoryIds(form)
+                ? (form.category_id ? normalizedManualExtraCategoryIds : fallbackExtraCategoryIds)
                 : [];
             const finalExtraCategoryIds = bestSellersEnabled && form.show_in_best_sellers
                 ? Array.from(new Set([...manualExtraCategoryIds, BEST_SELLERS_CATEGORY_ID]))
@@ -3051,36 +3059,38 @@ export default function AdminProducts() {
                             </div>
                         </div>
 
-                        {form.multi_category_enabled && (
+                        {form.multi_category_enabled && ((form.extra_category_ids || []).length > 0 || form.category_id) && (
                             <div className="space-y-2 rounded border p-3">
-                                <div className="flex items-center justify-between rounded border bg-gray-50 px-3 py-2 text-sm">
-                                    <span>{ID_TO_CATEGORY_NAME[form.category_id] || "Categoría principal"}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                                            Principal
-                                        </span>
-                                        <button
-                                            type="button"
-                                            className="px-2 py-1 border rounded hover:bg-gray-50 text-red-600"
-                                            title="Eliminar principal"
-                                            onClick={() =>
-                                                setForm((prev) => {
-                                                    const [nextPrimary, ...restExtras] = (prev.extra_category_ids || []).map(Number);
-                                                    const nextCategoryId = Number.isFinite(nextPrimary) ? nextPrimary : "";
-                                                    return {
-                                                        ...prev,
-                                                        category_id: nextCategoryId,
-                                                        category_name: nextCategoryId ? ID_TO_CATEGORY_NAME[nextCategoryId] || defaultCategoryName : "",
-                                                        extra_category_ids: restExtras,
-                                                        extra_category_draft: "",
-                                                    };
-                                                })
-                                            }
-                                        >
-                                            🗑️
-                                        </button>
+                                {form.category_id && (
+                                    <div className="flex items-center justify-between rounded border bg-gray-50 px-3 py-2 text-sm">
+                                        <span>{ID_TO_CATEGORY_NAME[form.category_id] || `Categoría ${form.category_id}`}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                                                Principal
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 border rounded hover:bg-gray-50 text-red-600"
+                                                title="Eliminar principal"
+                                                onClick={() =>
+                                                    setForm((prev) => {
+                                                        const [nextPrimary, ...restExtras] = (prev.extra_category_ids || []).map(Number);
+                                                        const nextCategoryId = Number.isFinite(nextPrimary) ? nextPrimary : "";
+                                                        return {
+                                                            ...prev,
+                                                            category_id: nextCategoryId,
+                                                            category_name: nextCategoryId ? ID_TO_CATEGORY_NAME[nextCategoryId] || defaultCategoryName : "",
+                                                            extra_category_ids: restExtras,
+                                                            extra_category_draft: "",
+                                                        };
+                                                    })
+                                                }
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {(form.extra_category_ids || []).map((categoryId) => (
                                     <div key={categoryId} className="flex items-center justify-between rounded border px-3 py-2 text-sm">
