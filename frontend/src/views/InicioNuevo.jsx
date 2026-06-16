@@ -20,6 +20,24 @@ import maison from '../assets/maison.jpg'
 import rasasi from '../assets/rasasi.png'
 import ray from '../assets/raysi.jpg'
 
+const carouselPublicBrands = [
+    { src: "/carru_carolina.webp", alt: "Carolina Herrera" },
+    { src: "/carru_chanel.png", alt: "Chanel" },
+    { src: "/creed.jpg", alt: "Creed" },
+    { src: "/carru_dior.png", alt: "Dior" },
+    { src: "/amani.svg", alt: "Giorgio Armani" },
+    { src: "/kurdi.png", alt: "Khurdi" },
+    { src: "/amo.jpg", alt: "Amo" },
+    { src: "/montale_si.png", alt: "Montale" },
+    { src: "/carru_paco.svg", alt: "Paco Rabanne" },
+    { src: "/carru_parfum.png", alt: "Parfums de Marly" },
+    { src: "/carru_tomford.png", alt: "Tom Ford" },
+    { src: "/carru_versace.png", alt: "Versace" },
+    { src: "/carru_vic.png", alt: "Victoria's Secret" },
+    { src: "/carru_xerjof.webp", alt: "Xerjoff" },
+    { src: "/ysl_si.png", alt: "Yves Saint Laurent" },
+];
+
 const API = getApiUrl();
 
 const cssValue = (value, fallback) =>
@@ -470,6 +488,11 @@ shadow-lg shadow-amber-500/20
                                 <div className="brand-container">
                                     <img src={ray} alt="Ray" className="brand-img" />
                                 </div>
+                                {carouselPublicBrands.map((brand) => (
+                                    <div className="brand-container" key={brand.src}>
+                                        <img src={brand.src} alt={brand.alt} className="brand-img" />
+                                    </div>
+                                ))}
                             </div>
 
 
@@ -504,6 +527,11 @@ shadow-lg shadow-amber-500/20
                                 <div className="brand-container">
                                     <img src={ray} alt="Ray" className="brand-img" />
                                 </div>
+                                {carouselPublicBrands.map((brand) => (
+                                    <div className="brand-container" key={`duplicate-${brand.src}`}>
+                                        <img src={brand.src} alt={brand.alt} className="brand-img" />
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
