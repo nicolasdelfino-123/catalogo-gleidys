@@ -9,6 +9,7 @@ import AdminBudgetSelectionCell from "../components/admin/AdminBudgetSelectionCe
 import AdminBudgetModal from "../components/admin/AdminBudgetModal.jsx";
 import AdminPriceAdjustmentModal from "../components/admin/AdminPriceAdjustmentModal.jsx";
 import AdminPriceAdjustmentReviewBar from "../components/admin/AdminPriceAdjustmentReviewBar.jsx";
+import AdminExchangeRateModal from "../components/admin/AdminExchangeRateModal.jsx";
 import {
     applyAdminPriceAdjustment,
     confirmAdminPriceAdjustment,
@@ -486,6 +487,7 @@ export default function AdminProducts() {
     const [budgetSelections, setBudgetSelections] = useState({});
     const [budgetModalOpen, setBudgetModalOpen] = useState(false);
     const [priceAdjustmentModalOpen, setPriceAdjustmentModalOpen] = useState(false);
+    const [exchangeRateModalOpen, setExchangeRateModalOpen] = useState(false);
     const [pendingPriceAdjustment, setPendingPriceAdjustment] = useState(null);
     const [priceAdjustmentHistory, setPriceAdjustmentHistory] = useState([]);
     const [priceAdjustmentBusy, setPriceAdjustmentBusy] = useState(false);
@@ -1672,6 +1674,13 @@ export default function AdminProducts() {
                     </button>
                 )}
                 <button
+                    type="button"
+                    onClick={() => setExchangeRateModalOpen(true)}
+                    className="w-full rounded bg-indigo-700 px-4 py-2 text-white hover:bg-indigo-800 sm:w-auto sm:px-3"
+                >
+                    Cotización
+                </button>
+                <button
                     onClick={() => setForm({
                         category_id: "",
                         category_name: "",
@@ -2541,6 +2550,13 @@ export default function AdminProducts() {
                     onDeleteHistoryItem={deletePriceAdjustmentHistoryItem}
                 />
             )}
+
+            <AdminExchangeRateModal
+                open={exchangeRateModalOpen}
+                api={API}
+                token={token}
+                onClose={() => setExchangeRateModalOpen(false)}
+            />
 
             {productToHide && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">

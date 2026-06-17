@@ -40,6 +40,24 @@ const carouselPublicBrands = [
 
 const API = getApiUrl();
 
+const DEFAULT_MARQUEE_SETTINGS = {
+    enabled: true,
+    custom_text: "Precios referenciales en USD",
+    rates: {
+        usd: { label: "Dólar", flag: "💵", value: "" },
+        ars: { label: "Bolívar", flag: "🇻🇪", value: "" },
+        brl: { label: "Peso colombiano", flag: "🇨🇴", value: "" },
+    },
+};
+
+const RATE_ORDER = ["ars", "brl"];
+
+const formatRateValue = (code, value = "") => {
+    const cleanValue = String(value || "").trim();
+    if (!cleanValue) return "";
+    return code === "ars" ? `Bs ${cleanValue}` : `COP ${cleanValue}`;
+};
+
 const cssValue = (value, fallback) =>
     value === undefined || value === null || value === "" ? fallback : value;
 
@@ -78,6 +96,7 @@ export default function InicioNuevo() {
     const location = useLocation();
     const navigate = useNavigate();
     const [homeFeaturedIds, setHomeFeaturedIds] = useState(null);
+    const [marqueeSettings, setMarqueeSettings] = useState(DEFAULT_MARQUEE_SETTINGS);
     const heroImageDesktop = `/${storeConfig.media.heroImageDesktop || storeConfig.media.heroImage || ""}`;
     const heroImageMobile = `/${storeConfig.media.heroImageMobile || storeConfig.media.heroImageDesktop || storeConfig.media.heroImage || ""}`;
     const heroConfig = storeConfig.hero || {};
@@ -98,6 +117,20 @@ export default function InicioNuevo() {
             .catch(() => {
                 setHomeFeaturedIds([]);
             });
+
+        fetch(`${API}/public/home-marquee-settings`)
+            .then((res) => (res.ok ? res.json() : DEFAULT_MARQUEE_SETTINGS))
+            .then((data) => {
+                setMarqueeSettings({
+                    ...DEFAULT_MARQUEE_SETTINGS,
+                    ...data,
+                    rates: {
+                        ...DEFAULT_MARQUEE_SETTINGS.rates,
+                        ...(data?.rates || {}),
+                    },
+                });
+            })
+            .catch(() => setMarqueeSettings(DEFAULT_MARQUEE_SETTINGS));
     }, []);
 
     const ADDRESS = storeConfig.business.address;
@@ -144,6 +177,18 @@ export default function InicioNuevo() {
         : homeFeaturedIds.length > 0
             ? selectedHomeProducts
             : fallbackFeaturedProducts;
+    const marqueeItems = [
+        marqueeSettings.custom_text?.trim(),
+        ...RATE_ORDER.map((code) => {
+            const rate = marqueeSettings.rates?.[code];
+            if (!rate?.value?.trim()) return null;
+            return `${rate.flag} 1 USD = ${formatRateValue(code, rate.value)}`;
+        }),
+    ].filter(Boolean);
+
+    const visibleMarqueeItems = marqueeItems.length > 0
+        ? marqueeItems
+        : ["Precios referenciales en USD"];
 
 
     useLayoutEffect(() => {
@@ -268,45 +313,57 @@ export default function InicioNuevo() {
                     )}
                 </div>
             </section>
-            {/* 
-            <div className="relative z-10 overflow-hidden whitespace-nowrap bg-gradient-to-r from-black via-[#0B0608] to-black py-3">
-         
-                <div className="marquee-track will-change-transform">
-                    
-                    <div className="marquee-group">
-                        <span className="text-white text-lg md:text-2xl font-semibold mx-[40px]">
-                            3 cuotas sin interés<span className="mx-6">•</span>Descuentos Pago Efectivo / Transferencia
-                        </span>
-                        <span className="text-white text-lg md:text-2xl font-semibold mx-[40px]">
-                            3 cuotas sin interés<span className="mx-6">•</span>Descuentos Pago Efectivo / Transferencia
-                        </span>
-                    </div>
-            
-                    <div className="marquee-group" aria-hidden="true">
-                        <span className="text-white text-lg md:text-2xl font-semibold mx-[40px]">
-                            3 cuotas sin interés<span className="mx-6">•</span>Descuentos Pago Efectivo / Transferencia
-                        </span>
-                        <span className="text-white text-lg md:text-2xl font-semibold mx-[40px]">
-                            3 cuotas sin interés<span className="mx-6">•</span>Descuentos Pago Efectivo / Transferencia
-                        </span>
+            {marqueeSettings.enabled !== false && (
+                <div className="relative z-10 overflow-hidden whitespace-nowrap bg-gradient-to-r from-black via-[#0B0608] to-black py-3">
+                    <div className="marquee-track will-change-transform">
+                        {Array.from({ length: 4 }).map((_, groupIndex) => (
+                            <div
+                                key={`marquee-group-${groupIndex}`}
+                                className="marquee-group"
+                                aria-hidden={groupIndex > 0 ? "true" : undefined}
+                            >
+                                {visibleMarqueeItems.map((item, itemIndex) => (
+                                    <span
+                                        key={`marquee-${groupIndex}-${itemIndex}`}
+                                        className="marquee-item text-lg font-semibold text-white md:text-2xl"
+                                    >
+                                        <span>{item}</span>
+                                        <span className="marquee-separator text-amber-300">•</span>
+                                    </span>
+                                ))}
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </div> */}
+            )}
 
             <style>{`
-    .marquee-track {
-      display: inline-flex;
-      animation: marquee 32s linear infinite;
-    }
-    .marquee-group {
-      display: inline-flex;
-    }
-    /* Se anima solo hasta -50% porque hay 2 grupos idénticos → no hay baches */
-    @keyframes marquee {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
-  `}</style>
+                .marquee-track {
+                    display: inline-flex;
+                    min-width: max-content;
+                    animation: marquee 18s linear infinite;
+                }
+                .marquee-group {
+                    display: inline-flex;
+                    align-items: center;
+                }
+                .marquee-item {
+                    display: inline-flex;
+                    align-items: center;
+                    flex-shrink: 0;
+                }
+                .marquee-separator {
+                    display: inline-flex;
+                    width: 96px;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+                @keyframes marquee {
+                    from { transform: translateX(0); }
+                    to   { transform: translateX(-25%); }
+                }
+            `}</style>
 
             {/* PRODUCTOS */}
             <section className="max-w-7xl mx-auto px-2 sm:px-4 py-12">

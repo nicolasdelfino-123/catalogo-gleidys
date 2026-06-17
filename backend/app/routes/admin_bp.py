@@ -29,6 +29,7 @@ admin_bp = Blueprint('admin', __name__)
 ADMIN_HIDDEN_ORDER_MARKER = "__ADMIN_HIDDEN__"
 ADMIN_SETTINGS_TABLE = "admin_settings"
 HOME_FEATURED_PRODUCTS_KEY = "home_featured_product_ids"
+HOME_MARQUEE_SETTINGS_KEY = "home_marquee_settings"
 PRICE_ADJUSTMENT_ROLLBACK_KEY = "price_adjustment_rollback"
 PRICE_ADJUSTMENT_HISTORY_KEY = "price_adjustment_history"
 MAX_HOME_FEATURED_PRODUCTS = 12
@@ -36,6 +37,15 @@ MULTI_CATEGORY_META_TYPE = "multi_category_meta"
 ADMIN_HIDDEN_PRODUCT_KEY = "is_active_product"
 BEST_SELLERS_CATEGORY_ID = 999999
 BEST_SELLERS_CATEGORY_NAME = "Más Vendidos"
+DEFAULT_HOME_MARQUEE_SETTINGS = {
+    "enabled": True,
+    "custom_text": "Precios referenciales en USD",
+    "rates": {
+        "usd": {"label": "Dólar", "flag": "🇺🇸", "value": ""},
+        "ars": {"label": "Bolívar", "flag": "🇻🇪", "value": ""},
+        "brl": {"label": "Peso colombiano", "flag": "🇨🇴", "value": ""},
+    },
+}
 
 def _ensure_admin_settings_table():
     db.session.execute(text(f"""
@@ -97,6 +107,26 @@ def _normalize_featured_product_ids(value):
         ids.append(product_id)
 
     return ids
+
+def _normalize_home_marquee_settings(value):
+    data = value if isinstance(value, dict) else {}
+    base = json.loads(json.dumps(DEFAULT_HOME_MARQUEE_SETTINGS))
+    normalized = {
+        "enabled": bool(data.get("enabled", base["enabled"])),
+        "custom_text": str(data.get("custom_text", base["custom_text"]) or "").strip()[:180],
+        "rates": {},
+    }
+
+    incoming_rates = data.get("rates") if isinstance(data.get("rates"), dict) else {}
+    for code, defaults in base["rates"].items():
+        item = incoming_rates.get(code) if isinstance(incoming_rates.get(code), dict) else {}
+        normalized["rates"][code] = {
+            "label": defaults["label"],
+            "flag": defaults["flag"],
+            "value": str(item.get("value", "") or "").strip()[:40],
+        }
+
+    return normalized
 
 def _serialize_admin_order(order):
     billing_address = dict(order.billing_address or {}) if isinstance(order.billing_address, dict) else order.billing_address
@@ -908,6 +938,35 @@ def update_home_featured_products():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error al guardar destacados de Inicio: {str(e)}'}), 500
+
+
+@admin_bp.route('/home-marquee-settings', methods=['GET'])
+@jwt_required()
+def get_home_marquee_settings():
+    if not admin_required():
+        return jsonify({'error': 'Acceso denegado. Se requieren permisos de administrador.'}), 403
+
+    try:
+        settings = _get_admin_setting(HOME_MARQUEE_SETTINGS_KEY, DEFAULT_HOME_MARQUEE_SETTINGS)
+        return jsonify(_normalize_home_marquee_settings(settings)), 200
+    except Exception as e:
+        return jsonify({'error': f'Error al obtener cotizaciones de Inicio: {str(e)}'}), 500
+
+
+@admin_bp.route('/home-marquee-settings', methods=['PUT'])
+@jwt_required()
+def update_home_marquee_settings():
+    if not admin_required():
+        return jsonify({'error': 'Acceso denegado. Se requieren permisos de administrador.'}), 403
+
+    try:
+        settings = _normalize_home_marquee_settings(request.get_json() or {})
+        _set_admin_setting(HOME_MARQUEE_SETTINGS_KEY, settings)
+        db.session.commit()
+        return jsonify(settings), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al guardar cotizaciones de Inicio: {str(e)}'}), 500
 
 
 # =======================

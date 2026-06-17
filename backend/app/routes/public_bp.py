@@ -23,6 +23,24 @@ from flask import Blueprint, request, jsonify
 public_bp = Blueprint('public', __name__)
 ADMIN_SETTINGS_TABLE = "admin_settings"
 HOME_FEATURED_PRODUCTS_KEY = "home_featured_product_ids"
+HOME_MARQUEE_SETTINGS_KEY = "home_marquee_settings"
+DEFAULT_HOME_MARQUEE_SETTINGS = {
+    "enabled": True,
+    "custom_text": "Precios referenciales en USD",
+    "rates": {
+        "usd": {"label": "Dólar", "flag": "🇺🇸", "value": ""},
+        "ars": {"label": "Bolívar", "flag": "🇻🇪", "value": ""},
+        "brl": {"label": "Peso colombiano", "flag": "🇨🇴", "value": ""},
+    },
+}
+
+def _ensure_public_settings_table():
+    db.session.execute(text(f"""
+        CREATE TABLE IF NOT EXISTS {ADMIN_SETTINGS_TABLE} (
+            key VARCHAR(120) PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    """))
 
 def _is_product_hidden(product):
     return any(
@@ -46,6 +64,7 @@ def _product_category_ids(product):
     return ids
 
 def _get_public_setting(key, default=None):
+    _ensure_public_settings_table()
     row = db.session.execute(
         text(f"SELECT value FROM {ADMIN_SETTINGS_TABLE} WHERE key = :key"),
         {"key": key},
@@ -56,6 +75,26 @@ def _get_public_setting(key, default=None):
         return json.loads(row[0])
     except Exception:
         return default
+
+def _normalize_home_marquee_settings(value):
+    data = value if isinstance(value, dict) else {}
+    base = json.loads(json.dumps(DEFAULT_HOME_MARQUEE_SETTINGS))
+    normalized = {
+        "enabled": bool(data.get("enabled", base["enabled"])),
+        "custom_text": str(data.get("custom_text", base["custom_text"]) or "").strip()[:180],
+        "rates": {},
+    }
+
+    incoming_rates = data.get("rates") if isinstance(data.get("rates"), dict) else {}
+    for code, defaults in base["rates"].items():
+        item = incoming_rates.get(code) if isinstance(incoming_rates.get(code), dict) else {}
+        normalized["rates"][code] = {
+            "label": defaults["label"],
+            "flag": defaults["flag"],
+            "value": str(item.get("value", "") or "").strip()[:40],
+        }
+
+    return normalized
 
 @public_bp.route('/')
 def home():
@@ -165,6 +204,15 @@ def get_home_featured_products():
         return jsonify({'product_ids': [product_id for product_id in product_ids if product_id in visible_ids]}), 200
     except Exception as e:
         return jsonify({'error': 'Error al obtener productos destacados: ' + str(e)}), 500
+
+
+@public_bp.route('/home-marquee-settings', methods=['GET'])
+def get_home_marquee_settings():
+    try:
+        settings = _get_public_setting(HOME_MARQUEE_SETTINGS_KEY, DEFAULT_HOME_MARQUEE_SETTINGS)
+        return jsonify(_normalize_home_marquee_settings(settings)), 200
+    except Exception as e:
+        return jsonify({'error': 'Error al obtener cotizaciones de Inicio: ' + str(e)}), 500
     
 
 @public_bp.route('/send-mail', methods=['POST'])
