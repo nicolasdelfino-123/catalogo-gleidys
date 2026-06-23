@@ -316,6 +316,45 @@ function FlavorPills({ catalog = [], onChange }) {
 const API = import.meta.env.VITE_BACKEND_URL?.replace(/\/+$/, "") || "";
 const MAX_HOME_FEATURED_PRODUCTS = 12;
 
+const withFreshParam = (url) => {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}_=${Date.now()}`;
+};
+
+const fetchAdminJson = async (url, token, options = {}) => {
+    const res = await fetch(withFreshParam(url), {
+        cache: "no-store",
+        ...options,
+        headers: {
+            Accept: "application/json",
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+            ...(options.headers || {}),
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const contentType = res.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json")
+        ? await res.json().catch(() => null)
+        : await res.text().catch(() => "");
+
+    if (!res.ok) {
+        const message =
+            payload?.error ||
+            payload?.message ||
+            res.statusText ||
+            "No se pudo cargar la información";
+        throw new Error(message);
+    }
+
+    if (!contentType.includes("application/json")) {
+        throw new Error("El servidor no devolvió datos JSON. Revisá la sesión o la URL de producción.");
+    }
+
+    return payload;
+};
+
 // Normaliza paths viejos
 const normalizeImagePath = (u = "") => {
     if (!u) return "";
@@ -457,6 +496,8 @@ export default function AdminProducts() {
     const priceAdjustmentEnabled = storeConfig.features?.priceAdjustment === true;
     const bestSellersEnabled = storeConfig.features?.bestSellers === true;
     const [products, setProducts] = useState([])
+    const [loadingProducts, setLoadingProducts] = useState(false);
+    const [productsError, setProductsError] = useState("");
     const selectableCategories = PERFUME_CATEGORY_DEFINITIONS.filter((category) =>
         Number(category.id) !== BEST_SELLERS_CATEGORY_ID &&
         !category.children?.length
@@ -532,30 +573,28 @@ export default function AdminProducts() {
     };
 
     const fetchAll = async () => {
+        setLoadingProducts(true);
+        setProductsError("");
+
         try {
-            const [productsRes, featuredRes] = await Promise.all([
-                fetch(`${API}/admin/products`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                }),
-                fetch(`${API}/admin/home-featured-products`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                }),
+            const [productsData, featuredData] = await Promise.all([
+                fetchAdminJson(`${API}/admin/products`, token),
+                fetchAdminJson(`${API}/admin/home-featured-products`, token),
             ])
 
-            let visibleProductIds = null;
-            if (productsRes.ok) {
-                const data = await productsRes.json()
-                setProducts(data || [])
-                visibleProductIds = new Set((data || []).map((product) => Number(product.id)));
-            }
+            const nextProducts = Array.isArray(productsData) ? productsData : [];
+            const visibleProductIds = new Set(nextProducts.map((product) => Number(product.id)));
+            const featuredIds = (featuredData?.product_ids || []).map(Number);
 
-            if (featuredRes.ok) {
-                const data = await featuredRes.json()
-                const ids = (data?.product_ids || []).map(Number);
-                setFeaturedProductIds(visibleProductIds ? ids.filter((id) => visibleProductIds.has(id)) : ids)
-            }
+            setProducts(nextProducts)
+            setFeaturedProductIds(featuredIds.filter((id) => visibleProductIds.has(id)))
+            return nextProducts;
         } catch (error) {
             console.error("Error fetching products:", error)
+            setProductsError(error?.message || "No se pudieron cargar los productos.");
+            return [];
+        } finally {
+            setLoadingProducts(false);
         }
     }
 
@@ -1707,13 +1746,15 @@ export default function AdminProducts() {
                 >
                     Nuevo
                 </button>
-                {/* <button
+                <button
+                    type="button"
                     onClick={() => fetchAll()}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    disabled={loadingProducts}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     title="Actualizar datos desde el servidor"
                 >
-                    🔄 Refrescar
-                </button> */}
+                    {loadingProducts ? "Actualizando..." : "Actualizar"}
+                </button>
 
                 <Link
                     to="/admin/pedidos"
@@ -1794,6 +1835,26 @@ export default function AdminProducts() {
                     }}
                 />
             </div>
+
+            {productsError && (
+                <div className="mb-4 flex flex-col gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
+                    <span>{productsError}</span>
+                    <button
+                        type="button"
+                        onClick={() => fetchAll()}
+                        disabled={loadingProducts}
+                        className="rounded bg-red-700 px-3 py-1.5 text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            )}
+
+            {loadingProducts && products.length === 0 && !productsError && (
+                <div className="mb-4 rounded border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                    Cargando productos...
+                </div>
+            )}
 
             {priceAdjustmentEnabled && (
                 <AdminPriceAdjustmentReviewBar
